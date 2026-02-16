@@ -1,0 +1,21 @@
+--- a/gr00t/data/embodiment_tags.py
++++ b/gr00t/data/embodiment_tags.py
+@@ -59,3 +59,8 @@ class EmbodimentTag(Enum):
+     """
+     Any new embodiment.
+     """
++
++    REACHY2 = "reachy2"
++    """
++    The Pollen Robotics Reachy 2 humanoid robot.
++    """
+--- a/gr00t/model/gr00t_n1d6/processing_gr00t_n1d6.py
++++ b/gr00t/model/gr00t_n1d6/processing_gr00t_n1d6.py
+@@ -43,6 +43,7 @@ EMBODIMENT_TAG_TO_PROJECTOR_INDEX = {
+     "oxe_widowx": 1,
+     "oxe_droid": 16,
+     "new_embodiment": 10,
++    "reachy2": 11,
+ }
+
+

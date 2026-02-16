@@ -1,0 +1,88 @@
+# Reachy 2 Physical AI Pipeline - Requirements
+# Install with: pip install -r requirements.txt
+
+# ============================================
+# Core Simulation (reachy2_mujoco)
+# ============================================
+# NOTE: reachy2_mujoco is installed from local libs/ folder:
+#   pip install -e libs/reachy2_mujoco
+# Its dependencies are installed automatically, but listed here for reference:
+
+mujoco>=3.0.0
+numpy>=1.24.0
+opencv-python>=4.8.0
+rpyc>=5.3.0
+
+# reachy2_symbolic_ik is a dependency of reachy2_mujoco
+# Installed automatically via: pip install -e libs/reachy2_mujoco
+
+# ============================================
+# Visualization & Data Processing
+# ============================================
+matplotlib>=3.7.0
+pillow>=10.0.0
+pandas>=2.0.0
+pyarrow>=14.0.0
+pytz>=2023.3
+scipy>=1.10.0
+
+# ============================================
+# Dataset & Model Hub
+# ============================================
+huggingface-hub>=0.20.0
+datasets>=2.16.0
+safetensors>=0.4.0
+
+# ============================================
+# LeRobot (for dataset format)
+# ============================================
+# Install separately if needed:
+#   pip install lerobot
+# Or clone: https://github.com/huggingface/lerobot
+
+# ============================================
+# GR00T N1.6 (NVIDIA Isaac-GR00T)
+# ============================================
+# Install separately - requires uv and special setup:
+#   git clone --recurse-submodules https://github.com/NVIDIA/Isaac-GR00T
+#   cd Isaac-GR00T && pip install uv && uv sync --python 3.10 && uv pip install -e .
+#
+# Key dependencies (installed by Isaac-GR00T):
+# torch>=2.2.0
+# transformers>=4.40.0
+# accelerate>=0.27.0
+# diffusers>=0.27.0
+
+# ============================================
+# Cosmos Reason 2 (NVIDIA)
+# ============================================
+# Install separately:
+#   git clone https://github.com/nvidia-cosmos/cosmos-reason2
+#   cd cosmos-reason2 && pip install uv && uv sync --extra cu128
+#
+# Or install transformer support only:
+# transformers>=4.57.0  # For Cosmos model loading
+
+# ============================================
+# Development Tools
+# ============================================
+ipython>=8.0.0
+jupyter>=1.0.0
+tqdm>=4.65.0
+
+# ============================================
+# Optional: Video Recording
+# ============================================
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.8
+
+# ============================================
+# GUI (Gradio)
+# ============================================
+gradio>=4.0.0
+
+# ============================================
+# Cosmos Server (HTTP API)
+# ============================================
+flask>=2.0.0
+requests>=2.28.0

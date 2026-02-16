@@ -1,0 +1,36 @@
+{
+    "embodiment_tag": "reachy2",
+    "robot_type": "reachy2",
+
+    "state": {
+        "type": "proprio",
+        "state_dim": 7,
+        "joint_names": [
+            "shoulder_pitch", "shoulder_roll", "elbow_yaw",
+            "elbow_pitch", "wrist_roll", "wrist_pitch", "wrist_yaw"
+        ],
+        "normalize": true
+    },
+
+    "action": {
+        "type": "joint_position",
+        "action_dim": 8,
+        "joint_names": [
+            "shoulder_pitch", "shoulder_roll", "elbow_yaw",
+            "elbow_pitch", "wrist_roll", "wrist_pitch", "wrist_yaw",
+            "gripper"
+        ]
+    },
+
+    "language": {
+        "type": "text",
+        "task_description": "Pick up the colored cube and place it in the box"
+    },
+
+    "video": {
+        "type": "video",
+        "cameras": ["observation.images.front_cam"],
+        "resolution": [224, 224],
+        "fps": 15
+    }
+}

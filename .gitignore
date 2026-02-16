@@ -1,0 +1,79 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+
+# MuJoCo
+MUJOCO_LOG.TXT
+
+# Datasets (large files - download separately)
+dataset*/
+datasets/
+
+# Checkpoints (large files - download from HuggingFace)
+checkpoints/
+outputs/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Logs and outputs
+logs/
+*.log
+log.txt
+eval_results/
+camera_test_output/
+test_images/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets and credentials
+.env.local
+*.key
+*.pem
+credentials.json
+
+# Claude Code
+.claude/

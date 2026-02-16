@@ -1,0 +1,6 @@
+[submodule "libs/reachy2_mujoco"]
+	path = libs/reachy2_mujoco
+	url = https://github.com/pollen-robotics/reachy2_mujoco.git
+[submodule "Isaac-GR00T"]
+	path = Isaac-GR00T
+	url = https://github.com/NVIDIA/Isaac-GR00T.git

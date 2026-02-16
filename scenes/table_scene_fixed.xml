@@ -1,0 +1,100 @@
+<mujoco model="reachy2_table_scene">
+	<compiler angle="radian"/>
+	<include file="assets/reachy2_asset.xml"/>
+	<include file="assets/simpleTable_asset.xml"/>
+
+	<default>
+		<geom friction="0.1 0.005 0.0001"/>
+	</default>
+
+	<option impratio="10" noslip_iterations="5">
+		<flag multiccd="enable"/>
+	</option>
+
+	<size nconmax="1000" njmax="2000"/>
+
+	<visual>
+		<headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+		<rgba haze="0.15 0.25 0.35 1"/>
+		<global azimuth="150" elevation="-20"/>
+	</visual>
+
+	<asset>
+		<texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+		<texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+		<material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+	</asset>
+
+	<worldbody>
+		<light pos="0 0 3" dir="0 0 -1" directional="false"/>
+
+		<body name="floor">
+			<geom contype="1" conaffinity="2" friction=".1 0.005 0.0001" name="floor" pos="0 0 0" size="0 0 .25" type="plane" material="groundplane" condim="3" solimp="0 0.95 0.001 0.5 2" solref="0.02 1" margin="0"/>
+		</body>
+
+		<body name="reachy" pos="0 0 0" euler="0 0 0">
+			<freejoint name="mobile_base"/>
+			<include file="objects/reachy2_body.xml"/>
+		</body>
+
+		<body pos="0.4 0 0" name="table" euler="0 0 1.57">
+			<include file="objects/simpleWoodTable_body.xml"/>
+		</body>
+
+		<body name="cube" pos="0.32 -0.15 0.65">
+			<freejoint name="cube_joint"/>
+			<geom name="cube_geom" type="box" size="0.020 0.020 0.020" rgba="1.0 0 0 1" conaffinity="1" contype="1" mass="0.05" friction="1.0 0.5 0.01" priority="1"/>
+		</body>
+
+		<body name="rect_box" pos="0.32 -0.15 -1.0">
+			<freejoint name="rect_box_joint"/>
+			<geom name="rect_box_geom" type="box" size="0.025 0.020 0.018" rgba="0.0 1.0 0 1" conaffinity="1" contype="1" mass="0.05" friction="1.0 0.5 0.01" priority="1"/>
+		</body>
+
+		<body name="cylinder" pos="0.32 -0.15 -1.0">
+			<freejoint name="cylinder_joint"/>
+			<geom name="cylinder_geom" type="cylinder" size="0.018 0.020" rgba="0.0 0.0 1.0 1" conaffinity="1" contype="1" mass="0.05" friction="1.0 0.5 0.01" priority="1"/>
+		</body>
+
+		<body name="capsule" pos="0.32 -0.15 -1.0">
+			<freejoint name="capsule_joint"/>
+			<geom name="capsule_geom" type="capsule" size="0.018 0.012" rgba="1.0 1.0 0 1" conaffinity="1" contype="1" mass="0.05" friction="2.0 0.5 0.01" priority="1"/>
+		</body>
+
+		<body name="drop_box" pos="0.22 0.01 0.625">
+			<geom name="box_bottom" type="box" size="0.09 0.09 0.003" pos="0 0 0.003" rgba="0.9 0.9 0.9 1" conaffinity="1" contype="1"/>
+			<geom name="box_front" type="box" size="0.09 0.005 0.025" pos="0 -0.085 0.028" rgba="0.9 0.9 0.9 1" conaffinity="1" contype="1"/>
+			<geom name="box_back" type="box" size="0.09 0.005 0.025" pos="0 0.085 0.028" rgba="0.9 0.9 0.9 1" conaffinity="1" contype="1"/>
+			<geom name="box_left" type="box" size="0.005 0.09 0.025" pos="-0.085 0 0.028" rgba="0.9 0.9 0.9 1" conaffinity="1" contype="1"/>
+			<geom name="box_right" type="box" size="0.005 0.09 0.025" pos="0.085 0 0.028" rgba="0.9 0.9 0.9 1" conaffinity="1" contype="1"/>
+		</body>
+
+		<camera name="front_cam" pos="0.20 0.00 1.10" mode="targetbody" target="drop_box" fovy="108"/>
+		<camera name="workspace_cam" pos="0.35 -0.90 0.90" xyaxes="1 0 0 0 0.4 1" fovy="70"/>
+	</worldbody>
+
+	<equality>
+		<weld body1="reachy" relpose="0 0 0 1 0 0 0" solimp="0.9 0.95 0.001 0.5 2" solref="0.02 1"/>
+	</equality>
+
+	<keyframe>
+		<key name="ready" qpos="
+			0 0 0 1 0 0 0
+			0 0 0 0 0 0 0 0 0
+			0 0 0 0 0 0 0 0 0
+			0 0 0 0 0 0 0 0 0
+			0
+			0 0 0 0
+			0 0 0
+			0 0
+			-0.2 -0.3 0 -1.5 0 -0.3 0
+			0 0 0 0 0
+			0.2 0.3 0 -1.5 0 -0.3 0
+			0 0 0 0 0
+			0.32 -0.15 0.65 1 0 0 0
+			0.32 -0.15 -1.0 1 0 0 0
+			0.32 -0.15 -1.0 1 0 0 0
+			0.32 -0.15 -1.0 1 0 0 0
+		"/>
+	</keyframe>
+</mujoco>

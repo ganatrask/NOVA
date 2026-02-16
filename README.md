@@ -47,7 +47,7 @@ NOVA demonstrates the **complete NVIDIA Physical AI stack** working together on 
 │   VOICE INPUT                    SCENE UNDERSTANDING                │
 │   ┌─────────────┐               ┌──────────────────┐               │
 │   │  Parakeet   │──────────────▶│  Cosmos Reason 2 │               │
-│   │    ASR      │   text        │  "I see a red, white   │               │
+│   │    ASR      │   text        │  "I see a red    │               │
 │   │  (600M)     │   command     │   cube at..."    │               │
 │   └─────────────┘               └────────┬─────────┘               │
 │                                          │                         │
@@ -124,9 +124,12 @@ NOVA demonstrates the **complete NVIDIA Physical AI stack** working together on 
 conda create -n reachy_groot python=3.10 -y
 conda create -n reachy_cosmos python=3.10 -y
 
-# Clone repository
-git clone https://github.com/ganatrask/NOVA.git
+# Clone repository with submodules
+git clone --recurse-submodules https://github.com/ganatrask/NOVA.git
 cd NOVA
+
+# If already cloned without submodules:
+git submodule update --init --recursive
 ```
 
 ### Installation
@@ -134,10 +137,15 @@ cd NOVA
 # Activate main environment
 conda activate reachy_groot
 
-# Install reachy2_mujoco
+# Install reachy2_mujoco (simulation)
 pip install -e libs/reachy2_mujoco
 
-# Install dependencies
+# Install Isaac-GR00T (action policy)
+cd Isaac-GR00T
+pip install uv && uv sync --python 3.10 && uv pip install -e .
+cd ..
+
+# Install remaining dependencies
 pip install -r requirements.txt
 ```
 
@@ -218,20 +226,236 @@ action = [
 NOVA/
 ├── scripts/
 │   ├── pipeline_gui.py          # Gradio web interface
-│   ├── data_collector.py        # Dataset collection (600+ LOC)
+│   ├── data_collector.py        # Dataset collection
 │   ├── eval_closed_loop.py      # Policy evaluation in simulation
 │   ├── parakeet_asr.py          # Voice transcription
 │   ├── cosmos_reason.py         # Scene understanding
 │   ├── cosmos_server.py         # HTTP server for Cosmos
+│   ├── cosmos_client.py         # HTTP client for Cosmos
 │   └── robot_pipeline.py        # Full Voice→Reason→Act
+├── configs/
+│   ├── reachy2_modality_config.py  # GR00T modality config
+│   └── modality_reachy2.json       # Action space definition
+├── Isaac-GR00T/                 # NVIDIA Isaac-GR00T (submodule)
 ├── libs/
-│   └── reachy2_mujoco/          # Pollen Robotics simulator
-├── checkpoints/
-│   └── groot-reachy2-pickplace/ # Trained GR00T models (85GB)
-├── dataset_100/                 # LeRobot dataset (198MB)
-└── docs/
-    └── CLAUDE.md                # Development notes (72KB)
+│   └── reachy2_mujoco/          # Pollen Robotics simulator (submodule)
+├── requirements.txt             # Python dependencies
+└── README.md
 ```
+
+**Note:** Checkpoints and datasets are downloaded separately from HuggingFace.
+
+## Fine-Tuning GR00T for Your Robot
+
+This section explains how to fine-tune GR00T N1.6 on your own dataset and add support for new robot embodiments.
+
+### Adding a New Embodiment
+
+GR00T uses "embodiment tags" to identify different robots. To add your own:
+
+#### Step 1: Patch Isaac-GR00T
+
+Apply the patch to add your embodiment tag:
+
+```bash
+cd Isaac-GR00T
+
+# Apply the REACHY2 patch (or create your own)
+patch -p1 < ../patches/add_reachy2_embodiment.patch
+```
+
+The patch modifies two files:
+
+**`gr00t/data/embodiment_tags.py`** - Add enum entry:
+```python
+class EmbodimentTag(Enum):
+    # ... existing tags ...
+
+    REACHY2 = "reachy2"
+    """
+    The Pollen Robotics Reachy 2 humanoid robot.
+    """
+```
+
+**`gr00t/model/gr00t_n1d6/processing_gr00t_n1d6.py`** - Add projector index:
+```python
+EMBODIMENT_TAG_TO_PROJECTOR_INDEX = {
+    # ... existing mappings ...
+    "new_embodiment": 10,
+    "reachy2": 11,  # Use index 10-15 for custom robots
+}
+```
+
+#### Step 2: Create Modality Config
+
+Create a modality configuration that defines your robot's action space:
+
+**`configs/reachy2_modality_config.py`**:
+```python
+from gr00t.configs.data.embodiment_configs import register_modality_config
+from gr00t.data.embodiment_tags import EmbodimentTag
+from gr00t.data.types import (
+    ActionConfig, ActionFormat, ActionRepresentation,
+    ActionType, ModalityConfig
+)
+
+register_modality_config(
+    config={
+        "video": ModalityConfig(
+            delta_indices=[0],
+            modality_keys=["front_cam"]  # Your camera key
+        ),
+        "state": ModalityConfig(
+            delta_indices=[0],
+            modality_keys=["arm_joints"]  # Your state key
+        ),
+        "action": ModalityConfig(
+            delta_indices=list(range(0, 16)),  # Action horizon
+            modality_keys=["arm_joints", "gripper"],
+            action_configs=[
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.NON_EEF,
+                    format=ActionFormat.DEFAULT,
+                    state_key="arm_joints"
+                ),
+                ActionConfig(
+                    rep=ActionRepresentation.ABSOLUTE,
+                    type=ActionType.NON_EEF,
+                    format=ActionFormat.DEFAULT
+                ),
+            ],
+        ),
+        "language": ModalityConfig(
+            delta_indices=[0],
+            modality_keys=["annotation.human.task_description"]
+        ),
+    },
+    embodiment_tag=EmbodimentTag.REACHY2,  # Your tag
+)
+```
+
+### Collecting Training Data
+
+Use the data collector to gather demonstrations:
+
+```bash
+# Collect 100 episodes with domain randomization
+python scripts/data_collector.py \
+    --episodes 100 \
+    --output reachy2_dataset \
+    --arm both \
+    --randomize-object \
+    --randomize-color \
+    --cameras front_cam workspace_cam
+```
+
+Dataset format follows LeRobot v2.1:
+```
+reachy2_dataset/
+├── meta/
+│   ├── info.json           # Dataset metadata
+│   ├── stats.json          # Normalization statistics
+│   ├── tasks.jsonl         # Task descriptions
+│   └── episodes.jsonl      # Episode info
+├── data/chunk-000/
+│   └── episode_*.parquet   # State/action data
+└── videos/chunk-000/
+    └── observation.images.*/
+        └── episode_*.mp4   # Camera videos
+```
+
+### Training on Cloud/Cluster
+
+#### Prerequisites
+
+```bash
+# Clone and setup Isaac-GR00T
+git clone --recurse-submodules https://github.com/NVIDIA/Isaac-GR00T
+cd Isaac-GR00T
+
+# Apply embodiment patch
+patch -p1 < ../patches/add_reachy2_embodiment.patch
+
+# Install dependencies
+conda create -n groot python=3.10 -y
+conda activate groot
+pip install torch torchvision
+pip install flash-attn --no-build-isolation
+pip install -e .
+
+# Login to HuggingFace
+huggingface-cli login
+```
+
+#### Training Command
+
+```bash
+# Full training (2x A100, 30K steps)
+python -m gr00t.train \
+    --dataset_repo_id ganatrask/reachy2_100 \
+    --embodiment_tag reachy2 \
+    --video_backend decord \
+    --num_gpus 2 \
+    --batch_size 64 \
+    --max_steps 30000 \
+    --save_steps 3000 \
+    --output_dir ./checkpoints/groot-reachy2
+```
+
+#### SLURM/Cluster Settings
+
+| Resource | Quick Test | Full Training |
+|----------|------------|---------------|
+| CPU Cores | 8 | 32 |
+| Memory | 32 GiB | 128 GiB |
+| GPU | 1x A100 | 2x A100 |
+| Wall Time | 1 hour | 6 hours |
+
+### Loading Your Fine-Tuned Model
+
+```python
+from gr00t.data.embodiment_tags import EmbodimentTag
+from gr00t.policy.gr00t_policy import Gr00tPolicy
+
+# Load modality config first (must happen before policy init)
+import importlib.util
+spec = importlib.util.spec_from_file_location(
+    "modality_config",
+    "configs/reachy2_modality_config.py"
+)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+# Load policy
+policy = Gr00tPolicy(
+    embodiment_tag=EmbodimentTag.REACHY2,
+    model_path="checkpoints/groot-reachy2/checkpoint-30000",
+    device="cuda",
+    strict=True,
+)
+
+# Run inference
+obs = {
+    "video": {"front_cam": image[None, None, :, :, :]},
+    "state": {"arm_joints": joints[None, None, :]},
+    "language": {"annotation.human.task_description": [["Pick up the cube"]]},
+}
+action, _ = policy.get_action(obs)
+```
+
+### Troubleshooting
+
+| Error | Solution |
+|-------|----------|
+| `REACHY2 not found` | Apply patch: `patch -p1 < patches/add_reachy2_embodiment.patch` |
+| `Already registered` | Modality config loaded twice; add guard clause to prevent re-registration |
+| `OOM on A100` | Reduce batch size: `--batch_size 32` |
+| `torchcodec not available` | Use: `--video_backend decord` |
+| `Duplicate enum key` | Re-clone Isaac-GR00T and apply patch once |
+| `'reachy2' not in projector index` | Add mapping to `processing_gr00t_n1d6.py` (see patch) |
+
+---
 
 ## Technical Highlights
 
